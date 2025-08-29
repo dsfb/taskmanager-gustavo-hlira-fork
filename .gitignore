@@ -1,2 +1,5 @@
 /.env
 /todo.md
+/node_modules
+/venv
+db.sqlite3
