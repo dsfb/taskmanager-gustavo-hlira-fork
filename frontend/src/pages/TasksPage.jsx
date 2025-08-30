@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search, Filter, CheckCircle, Clock, AlertCircle, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react'
+import { Plus, Search, Filter, CheckCircle, Clock, AlertCircle, Brain , BarChart3} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import CreateTaskModal from '../components/CreateTaskModal'
-import EditTaskModal from '../components/EditTaskModal'
+import SimpleEditTaskModal from '../components/SimpleEditTaskModal'
 import TaskDetailsModal from '../components/TaskDetailsModal'
 import DeleteTaskModal from '../components/DeleteTaskModal'
+import SmartSuggestionsModal from '../components/SmartSuggestionsModal'
+import TaskActionMenu from '../components/TaskActionMenu'
+import ExportButton from '../components/ExportButton'
+import TaskTimer from '../components/TaskTimer'
+import AdvancedFiltersModal from '../components/AdvancedFiltersModal'
+import ReportsModal from '../components/ReportsModal'
+import NotificationManager from '../components/NotificationManager'
 import api from '../lib/axios'
 
 const TasksPage = () => {
@@ -22,6 +28,10 @@ const TasksPage = () => {
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [smartSuggestionsModalOpen, setSmartSuggestionsModalOpen] = useState(false)
+  const [advancedFiltersModalOpen, setAdvancedFiltersModalOpen] = useState(false)
+  const [reportsModalOpen, setReportsModalOpen] = useState(false)
+  const [appliedFilters, setAppliedFilters] = useState({})
   const [selectedTask, setSelectedTask] = useState(null)
   const queryClient = useQueryClient()
 
@@ -51,6 +61,24 @@ const TasksPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['tasks'])
+    }
+  })
+
+  // Create task mutation
+  const createTaskMutation = useMutation({
+    mutationFn: (taskData) => api.post('/tasks/', taskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tasks'])
+    },
+    onError: (error) => {
+      console.error("❌ Erro ao criar task");
+      console.error("Status:", error.response?.status);
+      console.error("Data (resposta do backend):", error.response?.data);
+      try {
+        console.error("Config (payload enviado):", JSON.parse(error.config?.data || "{}"));
+      } catch {
+        console.error("Config (payload enviado - bruto):", error.config?.data);
+      }
     }
   })
 
@@ -142,30 +170,12 @@ const TasksPage = () => {
           </div>
           <div className="flex items-center space-x-2">
             <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)} flex-shrink-0`}></div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleViewTask(task)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  Ver detalhes
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleEditTask(task)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => handleDeleteTask(task)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <TaskActionMenu
+              task={task}
+              onEdit={handleEditTask}
+              onDelete={handleDeleteTask}
+              onView={handleViewTask}
+            />
           </div>
         </div>
       </CardHeader>
@@ -242,10 +252,36 @@ const TasksPage = () => {
             Gerencie suas tarefas e acompanhe seu progresso
           </p>
         </div>
-        <Button onClick={() => setCreateModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Tarefa
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setAdvancedFiltersModalOpen(true)}
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filtros Avançados
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setReportsModalOpen(true)}
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Relatórios
+          </Button>
+          <ExportButton tasks={tasks} />
+          <Button 
+            variant="outline" 
+            onClick={() => setSmartSuggestionsModalOpen(true)}
+          >
+            <Brain className="w-4 h-4 mr-2" />
+            Sugestões IA
+          </Button>
+          <Button onClick={() => setCreateModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Tarefa
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -389,7 +425,7 @@ const TasksPage = () => {
         onOpenChange={setCreateModalOpen} 
       />
       
-      <EditTaskModal
+      <SimpleEditTaskModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         task={selectedTask}
@@ -408,9 +444,37 @@ const TasksPage = () => {
         onOpenChange={setDeleteModalOpen}
         task={selectedTask}
       />
+      
+      <SmartSuggestionsModal
+        open={smartSuggestionsModalOpen}
+        onOpenChange={setSmartSuggestionsModalOpen}
+        onCreateTask={(taskData) => {
+          // 🔹 Monta o payload no formato certo antes de enviar
+          const payload = {
+            title: taskData.title || "Sem título",
+            description: taskData.description || "",
+            priority: taskData.priority || "medium",
+            due_date: taskData.due_date || null
+          }
+          createTaskMutation.mutate(payload)
+        }}
+      />
+
+      <AdvancedFiltersModal
+        open={advancedFiltersModalOpen}
+        onOpenChange={setAdvancedFiltersModalOpen}
+        onApplyFilters={setAppliedFilters}
+      />
+
+      <ReportsModal
+        open={reportsModalOpen}
+        onOpenChange={setReportsModalOpen}
+        tasks={tasks}
+      />
+
+      <NotificationManager tasks={tasks} />
     </div>
   )
 }
 
 export default TasksPage
-

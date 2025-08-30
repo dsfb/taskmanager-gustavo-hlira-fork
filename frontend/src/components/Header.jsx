@@ -1,6 +1,7 @@
-import { Search, Bell, Plus } from 'lucide-react'
+import { Search, Plus, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import ThemeToggle from './ThemeToggle'
 
 const Header = () => {
   return (
@@ -19,6 +20,8 @@ const Header = () => {
 
         {/* Actions */}
         <div className="flex items-center space-x-4">
+          <ThemeToggle />
+          
           <Button size="sm" className="bg-primary hover:bg-primary/90">
             <Plus className="w-4 h-4 mr-2" />
             Nova Tarefa

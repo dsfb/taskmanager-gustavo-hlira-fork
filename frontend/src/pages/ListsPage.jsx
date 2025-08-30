@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, List, Edit, Trash2, CheckCircle, MoreHorizontal, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ import DeleteListModal from '../components/DeleteListModal'
 import api from '../lib/axios'
 
 const ListsPage = () => {
+  const navigate = useNavigate()
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -93,8 +95,8 @@ const ListsPage = () => {
   }
 
   const handleViewTasks = (list) => {
-    // Navigate to tasks page with list filter
-    window.location.href = `/app/tasks?list=${list.id}`
+    // Navigate to list detail page
+    navigate(`/app/lists/${list.id}`)
   }
 
   const handleSubmit = (e) => {

@@ -176,10 +176,21 @@ class Subtask(models.Model):
     Modelo para subtarefas.
     Cada subtarefa pertence a uma tarefa principal.
     """
+    PRIORITY_CHOICES = [
+        ('low', 'Baixa'),
+        ('medium', 'Média'),
+        ('high', 'Alta'),
+    ]
+
     title = models.CharField(
         max_length=200,
         verbose_name="Título",
         help_text="Título da subtarefa (máximo 200 caracteres)"
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Descrição",
+        help_text="Descrição detalhada da subtarefa"
     )
     completed = models.BooleanField(
         default=False,
@@ -190,6 +201,36 @@ class Subtask(models.Model):
         default=0,
         verbose_name="Ordem",
         help_text="Ordem de exibição da subtarefa"
+    )
+    priority = models.CharField(
+        max_length=10,
+        choices=PRIORITY_CHOICES,
+        default='medium',
+        verbose_name="Prioridade",
+        help_text="Nível de prioridade da subtarefa"
+    )
+    due_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Data Limite",
+        help_text="Data e hora limite para conclusão da subtarefa"
+    )
+    reminder = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Lembrete",
+        help_text="Data e hora para lembrete da subtarefa"
+    )
+    estimated_duration = models.DurationField(
+        null=True,
+        blank=True,
+        verbose_name="Duração Estimada",
+        help_text="Tempo estimado para conclusão da subtarefa"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Notas",
+        help_text="Notas adicionais sobre a subtarefa"
     )
     
     # Relacionamentos
@@ -231,6 +272,28 @@ class Subtask(models.Model):
         elif not self.completed:
             self.completed_at = None
         super().save(*args, **kwargs)
+
+    def is_overdue(self):
+        """Verifica se a subtarefa está atrasada"""
+        if not self.due_date or self.completed:
+            return False
+        return timezone.now() > self.due_date
+
+    def days_until_due(self):
+        """Retorna o número de dias até o vencimento"""
+        if not self.due_date:
+            return None
+        delta = self.due_date.date() - timezone.now().date()
+        return delta.days
+
+    def get_priority_display_color(self):
+        """Retorna a cor associada à prioridade"""
+        colors = {
+            'low': '#28a745',    # Verde
+            'medium': '#ffc107', # Amarelo
+            'high': '#dc3545',   # Vermelho
+        }
+        return colors.get(self.priority, '#6c757d')
 
 
 class TaskHistory(models.Model):
@@ -288,3 +351,4 @@ class TaskHistory(models.Model):
         if not self.estimated_duration or not self.actual_duration:
             return None
         return self.actual_duration <= self.estimated_duration
+

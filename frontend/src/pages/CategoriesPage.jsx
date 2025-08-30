@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, FolderOpen, Edit, Trash2, MoreHorizontal, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ import DeleteCategoryModal from '../components/DeleteCategoryModal'
 import api from '../lib/axios'
 
 const CategoriesPage = () => {
+  const navigate = useNavigate()
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -88,8 +90,8 @@ const CategoriesPage = () => {
   }
 
   const handleViewTasks = (category) => {
-    // Navigate to tasks page with category filter
-    window.location.href = `/app/tasks?category=${category.id}`
+    // Navigate to category detail page
+    navigate(`/app/categories/${category.id}`)
   }
 
   const handleSubmit = (e) => {

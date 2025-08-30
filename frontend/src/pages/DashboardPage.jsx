@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Calendar, CheckCircle, Clock, AlertCircle, TrendingUp, List, Tag, FolderOpen } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import AIInsightsPanel from '../components/AIInsightsPanel'
 import api from '../lib/axios'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -271,6 +273,9 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel />
     </div>
   )
 }
